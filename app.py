@@ -5,7 +5,7 @@ import base64
 import requests
 from datetime import datetime
 
-st.set_page_config(page_title="QC Bot · Grabado Láser", page_icon="🧊", layout="centered")
+st.set_page_config(page_title="Revisión de calidad · Vasos", page_icon="🧊", layout="centered")
 
 ORDERS_FILE = "orders.csv"
 ADMIN_PIN = "2468"  # cámbialo aquí
@@ -43,7 +43,6 @@ def save_orders(df):
     headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
 
     try:
-        # Necesitamos el sha del archivo actual para poder actualizarlo
         get_resp = requests.get(api_url, headers=headers, params={"ref": branch}, timeout=10)
         sha = get_resp.json().get("sha") if get_resp.status_code == 200 else None
 
@@ -95,7 +94,7 @@ def go(step):
 def reset_flow():
     st.session_state.messages = []
     st.session_state.order = None
-    bot_say("Hola 👋 Vamos a revisar una orden.\n\n¿Cuál es el número de orden?")
+    bot_say("¡Hola! ¿Cuál es el número de orden a revisar?")
     go("ask_order")
 
 if not st.session_state.messages:
@@ -107,35 +106,35 @@ def process_order(orden_num):
     user_say(orden_num)
     found = find_order(orden_num)
     if not found:
-        bot_say(f"No encontré la orden **{orden_num}** en la lista actualizada.\n\n"
+        bot_say(f"No encontré la orden **{orden_num}** en la lista.\n\n"
                 f"Verifica el número o contacta a tu supervisor para confirmar los datos.")
         go("retry")
         return
     st.session_state.order = found
-    bot_say(f"Orden #{found['orden']} encontrada — {found['cantidad']} unidades.\n\nEmpecemos la revisión.")
+    bot_say(f"Orden #{found['orden']} encontrada — {found['cantidad']} vasos.\n\nEmpecemos la revisión.")
     ask_paso1()
 
 def ask_paso1():
-    bot_say("¿Detectas lenguaje o imagen inapropiada en el diseño, o sospechas que es una imagen con "
-            "copyright/marca registrada no autorizada por el cliente?")
+    bot_say("¿Detectas lenguaje o imágenes inapropiadas en el diseño, o sospechas que es una imagen con "
+            "copyright o marca registrada no autorizada?")
     go("paso1")
 
 def answer_paso1(valor):
     user_say(valor)
     if valor == "Sí":
-        bot_say("🛑 DETENER EL ENVÍO.\n\nNotifica de inmediato a tu equipo de calidad antes de que la "
-                "orden continúe. No debe salir hasta recibir confirmación.", tag="hold")
+        bot_say("🛑 DETENER LA ORDEN.\n\nNotifica de inmediato a tu supervisor y no sigas con la producción.",
+                tag="hold")
         if st.session_state.order["tipo"] == "CORP":
-            bot_say("Adicionalmente, abre un ticket en ServiceNow para que el equipo de arte lo revise a fondo.", tag="hold")
+            bot_say("Abre un ticket para que el equipo de arte lo revise.", tag="hold")
         else:
-            bot_say("Notifica también a tu supervisor para confirmar si además se requiere ticket.", tag="hold")
+            bot_say("Confirma con tu supervisor si además se necesita abrir un ticket.", tag="hold")
         go("result")
     else:
         ask_paso2()
 
 def ask_paso2():
-    bot_say("¿El grabado impreso coincide con el rendering aprobado en pantalla, o es una imagen tipo "
-            "foto/dibujo con muchos tonos de detalle?")
+    bot_say("¿El grabado impreso coincide con el rendering en MES, o es una imagen tipo foto/dibujo "
+            "con muchos detalles?")
     go("paso2")
 
 def answer_paso2(valor):
@@ -152,7 +151,7 @@ def ask_paso2b():
 def answer_paso2b(valor):
     user_say(valor)
     if valor == "Sí":
-        bot_say("✅ PASA.\n\nEl grabado coincide con el rendering aprobado y es consistente entre unidades.", tag="pass")
+        bot_say("✅ Pasa.\n\nContinúa con la producción de la orden.", tag="pass")
         go("result")
     else:
         ask_paso3()
@@ -164,77 +163,73 @@ def ask_paso3():
 def answer_paso3(opcion):
     user_say(opcion)
     if opcion.startswith("a)"):
-        bot_say("🎫 Abre un ticket en ServiceNow.\n\nEl equipo de arte revisará los puntos/líneas extra antes de aprobar.", tag="ticket")
+        bot_say("🎫 Ticket.\n\nEl equipo de arte revisará los puntos o líneas extra antes de aprobar.", tag="ticket")
         go("result")
     elif opcion.startswith("b)"):
         if st.session_state.order["tipo"] == "ECM":
-            bot_say("✅ PASA.\n\nEste tipo de detalle en el registro/trademark se acepta tal cual.", tag="pass")
+            bot_say("✅ Pasa.\n\nEste detalle en el registro o trademark se acepta tal cual.", tag="pass")
         else:
-            bot_say("🎫 Abre un ticket en ServiceNow.\n\nEl equipo de arte debe revisar el registro/trademark antes de aprobar.", tag="ticket")
+            bot_say("🎫 Ticket.\n\nEl equipo de arte debe revisar el registro o trademark antes de aprobar.", tag="ticket")
         go("result")
     elif opcion.startswith("c)"):
         cantidad = st.session_state.order["cantidad"]
         if cantidad < 5:
-            bot_say("✅ PASA.\n\nAl ser menos de 5 unidades con arte complejo, se aprueba directo.", tag="pass")
+            bot_say("✅ Pasa.\n\nAl ser menos de 5 unidades con arte complejo, se aprueba directo.", tag="pass")
             go("result")
         else:
             bot_say("¿La mayoría de la imagen coincide con el rendering y solo falta un detalle menor?")
             go("paso3c_sub")
     else:
-        bot_say("📞 Contacta al equipo MES/IBM por el canal de Teams.\n\nEste tipo de problema no se resuelve "
-                "con un ticket de ServiceNow — ellos deben corregirlo directamente.", tag="contact")
+        bot_say("📞 Contacta al equipo MES/IBM por el canal de Teams.", tag="contact")
         go("result")
 
 def answer_paso3c_sub(valor):
     user_say(valor)
     if valor == "Sí":
-        bot_say("✅ PASA.\n\nLa mayoría del diseño coincide con el rendering aprobado.", tag="pass")
+        bot_say("✅ Pasa.\n\nLa mayoría del diseño coincide con el rendering aprobado.", tag="pass")
     else:
-        bot_say("🎫 Abre un ticket en ServiceNow.\n\nLa cantidad supera las 5 unidades y la mayoría del diseño "
-                "no coincide con el rendering.", tag="ticket")
+        bot_say("🎫 Ticket.\n\nLa cantidad supera las 5 unidades y la mayoría del diseño no coincide con el rendering.",
+                tag="ticket")
     go("result")
 
-# ---------- Interfaz: header ----------
+# ---------- Interfaz ----------
+
+TAG_COLORS = {
+    "pass": "#1E8E3E",
+    "ticket": "#B7791F",
+    "contact": "#1A5FB4",
+    "hold": "#C62828",
+}
 
 st.markdown("""
 <style>
-.header-box{
-    background:#075E54;color:#fff;padding:14px 18px;border-radius:12px 12px 0 0;
-    display:flex;align-items:center;gap:10px;margin-bottom:0;
-}
-.header-box .name{font-weight:600;font-size:16px;}
-.header-box .status{font-size:12px;color:#CFEFE9;}
-.chat-box{background:#E5DDD5;padding:16px;border-radius:0 0 12px 12px;min-height:400px;}
-.bubble-in{background:#fff;color:#111B21;padding:10px 12px;border-radius:0 10px 10px 10px;margin:6px 0;
-    max-width:85%;box-shadow:0 1px 1px rgba(0,0,0,.1);}
-.bubble-out{background:#DCF8C6;color:#111B21;padding:10px 12px;border-radius:10px 0 10px 10px;margin:6px 0 6px auto;
-    max-width:85%;box-shadow:0 1px 1px rgba(0,0,0,.1);text-align:right;}
-.tag-pass{border-left:4px solid #1E8E3E;}
-.tag-ticket{border-left:4px solid #B7791F;}
-.tag-contact{border-left:4px solid #1A5FB4;}
-.tag-hold{border-left:4px solid #C62828;}
+.app-title{font-size:1.35rem;font-weight:700;margin-bottom:0;}
+.app-sub{color:#8A8A8E;font-size:0.85rem;margin-top:-4px;margin-bottom:0.6rem;}
 </style>
-<div class="header-box">
-  <div style="font-size:22px;">🧊</div>
-  <div>
-    <div class="name">QC Bot · Grabado Láser</div>
-    <div class="status">en línea</div>
-  </div>
-</div>
 """, unsafe_allow_html=True)
 
-chat_html = '<div class="chat-box">'
-for m in st.session_state.messages:
-    text = m["text"].replace("\n", "<br>")
-    if m["role"] == "assistant":
-        tag_class = f' tag-{m["tag"]}' if m.get("tag") else ""
-        chat_html += f'<div class="bubble-in{tag_class}">{text}</div>'
-    else:
-        chat_html += f'<div class="bubble-out">{text}</div>'
-chat_html += '</div>'
-st.markdown(chat_html, unsafe_allow_html=True)
+st.markdown('<p class="app-title">🧊 Revisión de calidad — Vasos</p>', unsafe_allow_html=True)
+st.markdown('<p class="app-sub">Grabado láser · asistente de revisión</p>', unsafe_allow_html=True)
 
-# ---------- Interfaz: input según el paso actual ----------
+# Caja de chat con altura fija: aquí vive el scroll, no en la página completa
+chat_box = st.container(height=420, border=True)
+with chat_box:
+    for m in st.session_state.messages:
+        if m["role"] == "assistant":
+            with st.chat_message("assistant", avatar="🧊"):
+                if m.get("tag"):
+                    color = TAG_COLORS.get(m["tag"], "#444")
+                    st.markdown(
+                        f'<div style="border-left:4px solid {color};padding-left:10px;">{m["text"]}</div>',
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.write(m["text"])
+        else:
+            with st.chat_message("user", avatar="🙋"):
+                st.write(m["text"])
+
+# ---------- Input según el paso actual ----------
 
 step = st.session_state.step
 
@@ -272,12 +267,12 @@ elif step == "paso2b":
 
 elif step == "paso3":
     opciones = [
-        "a) Puntos o líneas extra que no se ven en el rendering",
-        "b) El registro (®) o trademark (™) se ve con poca definición",
-        "c) Arte complejo (texto/logo) con un detalle menor faltante",
-        "d) El tamaño o posición no coincide / está fuera de la ventana de marcado",
-        "e) La imagen de frente y reverso están intercambiadas",
-        "f) El color o tamaño del producto no coincide con lo que indica el sistema",
+        "a) Puntos o líneas extra que no se ven en el rendering en MES.",
+        "b) La marca registrada (®) o trademark (™) se ve con poca definición.",
+        "c) Arte complejo (texto/logo).",
+        "d) El tamaño o posición no coincide / está fuera de la ventana de grabado.",
+        "e) El logo de frente y reverso están intercambiados.",
+        "f) El color o tamaño del producto no coincide con lo que indica el rendering en MES.",
     ]
     for i, op in enumerate(opciones):
         if st.button(op, use_container_width=True, key=f"p3_{i}"):
