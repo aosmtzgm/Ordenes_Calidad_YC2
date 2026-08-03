@@ -205,9 +205,9 @@ st.markdown("""
 .header-box .name{font-weight:600;font-size:16px;}
 .header-box .status{font-size:12px;color:#CFEFE9;}
 .chat-box{background:#E5DDD5;padding:16px;border-radius:0 0 12px 12px;min-height:400px;}
-.bubble-in{background:#fff;padding:10px 12px;border-radius:0 10px 10px 10px;margin:6px 0;
+.bubble-in{background:#fff;color:#111B21;padding:10px 12px;border-radius:0 10px 10px 10px;margin:6px 0;
     max-width:85%;box-shadow:0 1px 1px rgba(0,0,0,.1);}
-.bubble-out{background:#DCF8C6;padding:10px 12px;border-radius:10px 0 10px 10px;margin:6px 0 6px auto;
+.bubble-out{background:#DCF8C6;color:#111B21;padding:10px 12px;border-radius:10px 0 10px 10px;margin:6px 0 6px auto;
     max-width:85%;box-shadow:0 1px 1px rgba(0,0,0,.1);text-align:right;}
 .tag-pass{border-left:4px solid #1E8E3E;}
 .tag-ticket{border-left:4px solid #B7791F;}
