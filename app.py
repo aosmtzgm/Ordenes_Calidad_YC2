@@ -122,7 +122,7 @@ def ask_paso1():
 def answer_paso1(valor):
     user_say(valor)
     if valor == "Sí":
-        bot_say("🛑 DETENER LA ORDEN.\n\nNotifica de inmediato a tu supervisor y no sigas con la producción.",
+        bot_say("Notifica de inmediato a tu supervisor y no sigas con la producción.",
                 tag="hold")
         if st.session_state.order["tipo"] == "CORP":
             bot_say("Abre un ticket para que el equipo de arte lo revise.", tag="hold")
@@ -151,7 +151,7 @@ def ask_paso2b():
 def answer_paso2b(valor):
     user_say(valor)
     if valor == "Sí":
-        bot_say("✅ Pasa.\n\nContinúa con la producción de la orden.", tag="pass")
+        bot_say("Continúa con la producción de la orden.", tag="pass")
         go("result")
     else:
         ask_paso3()
@@ -163,71 +163,102 @@ def ask_paso3():
 def answer_paso3(opcion):
     user_say(opcion)
     if opcion.startswith("a)"):
-        bot_say("🎫 Ticket.\n\nEl equipo de arte revisará los puntos o líneas extra antes de aprobar.", tag="ticket")
+        bot_say("El equipo de arte revisará los puntos o líneas extra antes de aprobar.", tag="ticket")
         go("result")
     elif opcion.startswith("b)"):
         if st.session_state.order["tipo"] == "ECM":
-            bot_say("✅ Pasa.\n\nEste detalle en el registro o trademark se acepta tal cual.", tag="pass")
+            bot_say("Este detalle en el registro o trademark se acepta tal cual.", tag="pass")
         else:
-            bot_say("🎫 Ticket.\n\nEl equipo de arte debe revisar el registro o trademark antes de aprobar.", tag="ticket")
+            bot_say("El equipo de arte debe revisar el registro o trademark antes de aprobar.", tag="ticket")
         go("result")
     elif opcion.startswith("c)"):
         cantidad = st.session_state.order["cantidad"]
         if cantidad < 5:
-            bot_say("✅ Pasa.\n\nAl ser menos de 5 unidades con arte complejo, se aprueba directo.", tag="pass")
+            bot_say("Al ser menos de 5 unidades con arte complejo, se aprueba directo.", tag="pass")
             go("result")
         else:
             bot_say("¿La mayoría de la imagen coincide con el rendering y solo falta un detalle menor?")
             go("paso3c_sub")
     else:
-        bot_say("📞 Contacta al equipo MES/IBM por el canal de Teams.", tag="contact")
+        bot_say("Contacta al equipo MES/IBM por el canal de Teams.", tag="contact")
         go("result")
 
 def answer_paso3c_sub(valor):
     user_say(valor)
     if valor == "Sí":
-        bot_say("✅ Pasa.\n\nLa mayoría del diseño coincide con el rendering aprobado.", tag="pass")
+        bot_say("La mayoría del diseño coincide con el rendering aprobado.", tag="pass")
     else:
-        bot_say("🎫 Ticket.\n\nLa cantidad supera las 5 unidades y la mayoría del diseño no coincide con el rendering.",
+        bot_say("La cantidad supera las 5 unidades y la mayoría del diseño no coincide con el rendering.",
                 tag="ticket")
     go("result")
 
 # ---------- Interfaz ----------
 
-TAG_COLORS = {
-    "pass": "#1E8E3E",
-    "ticket": "#B7791F",
-    "contact": "#1A5FB4",
-    "hold": "#C62828",
+from avatars import BOT_AVATAR_B64, USER_AVATAR_B64
+
+TAG_STYLE = {
+    "pass":    {"color": "#1E8E3E", "bg": "#E6F6EB", "icon": "✅", "label": "PASA"},
+    "ticket":  {"color": "#B7791F", "bg": "#FBF1E0", "icon": "🎟️", "label": "TICKET"},
+    "contact": {"color": "#1A5FB4", "bg": "#E7F0FC", "icon": "📲", "label": "CONTACTAR MES/IBM"},
+    "hold":    {"color": "#C62828", "bg": "#FBE9E9", "icon": "✋", "label": "DETENER"},
 }
 
-st.markdown("""
+GREEN = "#1E9E6B"       # verde principal (no verde bandera, más tipo esmeralda)
+GREEN_DARK = "#167A53"
+
+st.markdown(f"""
 <style>
-.app-title{font-size:1.35rem;font-weight:700;margin-bottom:0;}
-.app-sub{color:#8A8A8E;font-size:0.85rem;margin-top:-4px;margin-bottom:0.6rem;}
+.app-title{{font-size:1.4rem;font-weight:800;margin-bottom:0;color:{GREEN_DARK};}}
+.app-sub{{color:#8A8A8E;font-size:0.85rem;margin-top:-4px;margin-bottom:0.6rem;}}
+
+.msg-row{{display:flex;align-items:flex-end;gap:8px;margin:10px 0;}}
+.msg-row.user{{flex-direction:row-reverse;}}
+.msg-avatar{{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;
+    box-shadow:0 1px 3px rgba(0,0,0,.15);}}
+.msg-bubble{{max-width:74%;padding:10px 14px;font-size:14.5px;line-height:1.4;}}
+.msg-bubble.bot{{background:{GREEN};color:#fff;border-radius:4px 16px 16px 16px;}}
+.msg-bubble.user{{background:#F0F0F2;color:#1C1C1E;border-radius:16px 4px 16px 16px;}}
+
+.status-chip{{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+    font-weight:700;font-size:12.5px;margin-bottom:6px;}}
+
+div.stButton > button{{
+    border-radius:999px;
+    border:1.5px solid {GREEN};
+    color:{GREEN_DARK};
+    background:#fff;
+    font-weight:600;
+    padding:0.5rem 1rem;
+}}
+div.stButton > button:hover{{background:{GREEN};color:#fff;border-color:{GREEN};}}
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="app-title">🧊 Revisión de calidad — Vasos</p>', unsafe_allow_html=True)
-st.markdown('<p class="app-sub">Grabado láser · asistente de revisión</p>', unsafe_allow_html=True)
+st.markdown('<p class="app-title">YCBot 🐐</p>', unsafe_allow_html=True)
+st.markdown('<p class="app-sub">Revisión de calidad · grabado láser en vasos</p>', unsafe_allow_html=True)
+
+def render_bubble(role, text, tag=None):
+    avatar_b64 = BOT_AVATAR_B64 if role == "bot" else USER_AVATAR_B64
+    content = text.replace("\n", "<br>")
+    if tag and tag in TAG_STYLE:
+        t = TAG_STYLE[tag]
+        content = (f'<span class="status-chip" style="background:{t["bg"]};color:{t["color"]};">'
+                   f'{t["icon"]} {t["label"]}</span><br>{content}')
+    return (
+        f'<div class="msg-row {role}">'
+        f'<img class="msg-avatar" src="data:image/png;base64,{avatar_b64}">'
+        f'<div class="msg-bubble {role}">{content}</div>'
+        f'</div>'
+    )
 
 # Caja de chat con altura fija: aquí vive el scroll, no en la página completa
-chat_box = st.container(height=420, border=True)
+chat_box = st.container(height=440, border=True)
 with chat_box:
-    for m in st.session_state.messages:
-        if m["role"] == "assistant":
-            with st.chat_message("assistant", avatar="🧊"):
-                if m.get("tag"):
-                    color = TAG_COLORS.get(m["tag"], "#444")
-                    st.markdown(
-                        f'<div style="border-left:4px solid {color};padding-left:10px;">{m["text"]}</div>',
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.write(m["text"])
-        else:
-            with st.chat_message("user", avatar="🙋"):
-                st.write(m["text"])
+    html = "".join(
+        render_bubble("bot" if m["role"] == "assistant" else "user", m["text"], m.get("tag"))
+        for m in st.session_state.messages
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 # ---------- Input según el paso actual ----------
 
@@ -296,6 +327,54 @@ with st.sidebar:
     pin = st.text_input("PIN", type="password", key="admin_pin")
     if pin == ADMIN_PIN:
         st.success("Acceso concedido")
+
+        st.markdown("**Cargar órdenes desde Excel o CSV**")
+        st.caption("El archivo debe tener las columnas: `orden`, `cantidad`, `tipo` (ECM o CORP). "
+                   "Las órdenes que ya existan (mismo número) se omiten automáticamente.")
+        uploaded = st.file_uploader("Archivo", type=["xlsx", "csv"], key="orders_uploader")
+
+        if uploaded is not None:
+            file_id = getattr(uploaded, "file_id", uploaded.name + str(uploaded.size))
+            if st.session_state.get("last_uploaded_id") != file_id:
+                try:
+                    if uploaded.name.lower().endswith(".csv"):
+                        new_df = pd.read_csv(uploaded, dtype={"orden": str})
+                    else:
+                        new_df = pd.read_excel(uploaded, dtype={"orden": str})
+                    new_df.columns = [c.strip().lower() for c in new_df.columns]
+
+                    required = {"orden", "cantidad", "tipo"}
+                    if not required.issubset(set(new_df.columns)):
+                        st.error("El archivo debe tener las columnas: orden, cantidad, tipo")
+                    else:
+                        new_df = new_df[["orden", "cantidad", "tipo"]].copy()
+                        new_df["orden"] = new_df["orden"].astype(str).str.strip()
+                        new_df["tipo"] = new_df["tipo"].astype(str).str.upper().apply(
+                            lambda t: "CORP" if t.startswith("CORP") else "ECM"
+                        )
+
+                        existing_df = load_orders()
+                        combined = pd.concat([existing_df, new_df], ignore_index=True)
+                        combined = combined.drop_duplicates(subset="orden", keep="first")
+
+                        agregadas = len(combined) - len(existing_df)
+                        omitidas = len(new_df) - agregadas
+
+                        ok, msg = save_orders(combined)
+                        resumen = f"{agregadas} órdenes nuevas agregadas, {omitidas} repetidas omitidas."
+                        if ok:
+                            st.success(f"{resumen} {msg}")
+                        else:
+                            st.warning(f"{resumen} {msg}")
+
+                    st.session_state["last_uploaded_id"] = file_id
+                except Exception as e:
+                    st.error(f"No se pudo leer el archivo: {e}")
+            else:
+                st.info("Este archivo ya fue cargado.")
+
+        st.markdown("---")
+        st.markdown("**Editar lista manualmente**")
         df = load_orders()
         st.caption("Una fila por orden. El operador nunca ve esta tabla.")
         edited = st.data_editor(df, num_rows="dynamic", use_container_width=True, key="editor")
